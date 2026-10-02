@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 
 OPENAQ_LOCATIONS_URL = "https://api.openaq.org/v3/locations"
 
-COUNTRY_ID = 9 # India
-PROVIDER_ID = 168 # CPCB
+COUNTRY_ID = 9  # India
+PROVIDER_ID = 168  # CPCB
 PRIMARY_PARAMETER = "pm25"
 
 ENV_PATH = Path(".env")
@@ -22,6 +22,7 @@ INVENTORY_OUTPUT_PATH = Path("data/processed/station_inventory.csv")
 # ----------------------------------------------------------------------------
 # Environment
 # ----------------------------------------------------------------------------
+
 
 def get_api_key(env_path: Path = ENV_PATH) -> str:
     """Load the OpenAQ SPI key from a local environment file.
@@ -53,9 +54,11 @@ def get_api_key(env_path: Path = ENV_PATH) -> str:
 
     return api_key
 
+
 # ----------------------------------------------------------------------------
 # Data acquisition
 # ----------------------------------------------------------------------------
+
 
 def fetch_locations(
     api_key: str,
@@ -101,18 +104,16 @@ def fetch_locations(
 
         response = requests.get(
             OPENAQ_LOCATIONS_URL,
-            headers={
-                "X-API-Key": api_key
-            },
+            headers={"X-API-Key": api_key},
             params={
                 "countries_id": country_id,
                 "providers_id": provider_id,
                 "limit": limit,
                 "page": page,
                 "order_by": "id",
-                "sort_order": "asc"
+                "sort_order": "asc",
             },
-            timeout=timeout
+            timeout=timeout,
         )
 
         response.raise_for_status()
@@ -145,6 +146,7 @@ def fetch_locations(
 # Metadata extraction
 # ----------------------------------------------------------------------------
 
+
 def get_parameter_names(location: dict) -> list[str]:
     """Extract unique parameter names from a location record.
 
@@ -165,6 +167,7 @@ def get_parameter_names(location: dict) -> list[str]:
     }
 
     return sorted(parameter_names)
+
 
 def get_sensor_ids(
     location: dict,
@@ -199,9 +202,10 @@ def get_sensor_ids(
 # Data transformation
 # ----------------------------------------------------------------------------
 
+
 def flatten_locations(
-    locations: list[dict],
-    target_parameter: str
+        locations: list[dict],
+        target_parameter: str
 ) -> pd.DataFrame:
     """Convert OpenAQ location metadata into a tabular inventory.
 
@@ -258,45 +262,37 @@ def flatten_locations(
                 "has_target_parameter": bool(target_sensor_ids),
                 "target_sensor_count": len(target_sensor_ids),
                 "target_sensor_ids": ",".join(
-                    str(sensor_id)
-                    for sensor_id in target_sensor_ids
+                    str(sensor_id) for sensor_id in target_sensor_ids
                 ),
-                "available_parameters": ",".join(parameter_names)
+                "available_parameters": ",".join(parameter_names),
             }
         )
 
     inventory = pd.DataFrame(rows)
 
     inventory["datetime_first_utc"] = pd.to_datetime(
-        inventory["datetime_first_utc"],
-        utc=True,
-        errors="coerce"
+        inventory["datetime_first_utc"], utc=True, errors="coerce"
     )
 
     inventory["datetime_last_utc"] = pd.to_datetime(
-        inventory["datetime_last_utc"],
-        utc=True,
-        errors="coerce"
+        inventory["datetime_last_utc"], utc=True, errors="coerce"
     )
 
-    return (
-        inventory
-        .sort_values(
-            ["station_name", "location_id"]
-        )
-        .reset_index(drop=True)
-    )
+    return inventory.sort_values(
+        ["station_name", "location_id"]
+    ).reset_index(drop=True)
 
 
 # ----------------------------------------------------------------------------
 # output
 # ----------------------------------------------------------------------------
 
+
 def save_outputs(
     locations: list[dict],
     inventory: pd.DataFrame,
     raw_output_path: Path = RAW_OUTPUT_PATH,
-    inventory_output_path: Path = INVENTORY_OUTPUT_PATH
+    inventory_output_path: Path = INVENTORY_OUTPUT_PATH,
 ) -> None:
     """Save raw location metadata and the flattened inventory.
 
@@ -322,8 +318,7 @@ def save_outputs(
     inventory_output_path.parent.mkdir(parents=True, exist_ok=True)
 
     raw_output_path.write_text(
-        json.dumps(locations, indent=2),
-        encoding="utf-8"
+        json.dumps(locations, indent=2), encoding="utf-8"
     )
 
     inventory.to_csv(inventory_output_path, index=False)
@@ -332,6 +327,7 @@ def save_outputs(
 # ----------------------------------------------------------------------------
 # Reporting
 # ----------------------------------------------------------------------------
+
 
 def print_summary(inventory: pd.DataFrame, target_parameter: str) -> None:
     """Print a summary of the monitoring-station inventory.
@@ -375,38 +371,31 @@ def print_summary(inventory: pd.DataFrame, target_parameter: str) -> None:
         "station_name",
         "provider_name",
         "datetime_last_utc",
-        "target_sensor_count"
+        "target_sensor_count",
     ]
 
-    recent_locations = (
-        target_inventory
-        .sort_values(
-            "datetime_last_utc",
-            ascending=False,
-            na_position="last"
-        )
-        .head(10)
-    )
+    recent_locations = target_inventory.sort_values(
+        "datetime_last_utc", ascending=False, na_position="last"
+    ).head(10)
 
     print(recent_locations[columns].to_string(index=False))
+
 
 # ----------------------------------------------------------------------------
 # Main
 # ----------------------------------------------------------------------------
+
 
 def main() -> None:
     """Build and save the monitoring-station inventory."""
     api_key = get_api_key()
 
     locations = fetch_locations(
-        api_key=api_key,
-        country_id=COUNTRY_ID,
-        provider_id=PROVIDER_ID
+        api_key=api_key, country_id=COUNTRY_ID, provider_id=PROVIDER_ID
     )
 
     inventory = flatten_locations(
-        locations=locations,
-        target_parameter=PRIMARY_PARAMETER
+        locations=locations, target_parameter=PRIMARY_PARAMETER
     )
 
     save_outputs(locations=locations, inventory=inventory)

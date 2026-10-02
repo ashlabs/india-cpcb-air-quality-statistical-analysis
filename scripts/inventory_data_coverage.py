@@ -36,6 +36,7 @@ HTTP_INTERNAL_SERVER_ERROR = 500
 # Environment
 # ----------------------------------------------------------------------------
 
+
 def get_api_key(env_path: Path = ENV_PATH) -> str:
     """Load the OpenAQ API key from a local environment file.
 
@@ -70,6 +71,7 @@ def get_api_key(env_path: Path = ENV_PATH) -> str:
 # ----------------------------------------------------------------------------
 # Sensor inventory
 # ----------------------------------------------------------------------------
+
 
 def parse_sensor_ids(value: object) -> list[int]:
     """Parse a comma-separated sensor ID field.
@@ -134,7 +136,7 @@ def build_sensor_inventory(inventory: pd.DataFrame) -> pd.DataFrame:
                     "country_code": location["country_code"],
                     "country_name": location["country_name"],
                     "latitude": location["latitude"],
-                    "longitude": location["longitude"]
+                    "longitude": location["longitude"],
                 }
             )
 
@@ -145,15 +147,11 @@ def build_sensor_inventory(inventory: pd.DataFrame) -> pd.DataFrame:
     ]
 
     if not duplicates.empty:
-        location_counts = (
-            duplicates
-            .groupby("sensor_id")["location_id"]
-            .nunique()
-        )
+        location_counts = duplicates.groupby(
+            "sensor_id"
+            )["location_id"].nunique()
 
-        conflicting_ids = location_counts[
-            location_counts > 1
-        ]
+        conflicting_ids = location_counts[location_counts > 1]
 
         if not conflicting_ids.empty:
             raise ValueError(
@@ -162,8 +160,7 @@ def build_sensor_inventory(inventory: pd.DataFrame) -> pd.DataFrame:
             )
 
     return (
-        sensor_inventory
-        .drop_duplicates(subset=["sensor_id"])
+        sensor_inventory.drop_duplicates(subset=["sensor_id"])
         .sort_values("sensor_id")
         .reset_index(drop=True)
     )
@@ -173,9 +170,9 @@ def build_sensor_inventory(inventory: pd.DataFrame) -> pd.DataFrame:
 # API access
 # ---------------------------------------------------------------------------
 
+
 def get_retry_delay(
-        response: requests.Response,
-        default_seconds: float = 60.0
+    response: requests.Response, default_seconds: float = 60.0
 ) -> float:
     """Determine how long to wait after an API rate-limit response.
 
@@ -192,9 +189,8 @@ def get_retry_delay(
     float
         Number of seconds to wait before retrying.
     """
-    header_value = (
-        response.headers.get("Retry-After")
-        or response.headers.get("x-ratelimit-reset")
+    header_value = response.headers.get("Retry-After") or response.headers.get(
+        "x-ratelimit-reset"
     )
 
     if not header_value:
@@ -220,7 +216,7 @@ def fetch_sensor_years(
     date_from: str,
     date_to: str,
     timeout: int = REQUEST_TIMEOUT_SECONDS,
-    max_attempts: int = MAX_ATTEMPTS
+    max_attempts: int = MAX_ATTEMPTS,
 ) -> dict:
     """Fetch yearly coverage data for one sensor.
 
@@ -266,9 +262,9 @@ def fetch_sensor_years(
                     "date_from": date_from,
                     "date_to": date_to,
                     "limit": 10,
-                    "page": 1
+                    "page": 1,
                 },
-                timeout=timeout
+                timeout=timeout,
             )
 
             if response.status_code == HTTP_ERROR_TOO_MANY_REQUESTS:
@@ -293,7 +289,7 @@ def fetch_sensor_years(
             requests.ConnectionError,
             requests.Timeout,
             requests.HTTPError,
-            requests.JSONDecodeError
+            requests.JSONDecodeError,
         ) as exc:
             last_error = exc
 
@@ -319,6 +315,7 @@ def fetch_sensor_years(
 # ---------------------------------------------------------------------------
 # Local API cache
 # ---------------------------------------------------------------------------
+
 
 def get_cache_path(sensor_id: int, cache_dir: Path = CACHE_DIR) -> Path:
     """Build the raw cache path for a sensor response.
@@ -367,9 +364,7 @@ def load_cached_response(
 
 
 def save_cached_response(
-    sensor_id: int,
-    response_data: dict,
-    cache_dir: Path = CACHE_DIR
+    sensor_id: int, response_data: dict, cache_dir: Path = CACHE_DIR
 ) -> None:
     """Save a successful sensor API response to the local cache.
 
@@ -392,14 +387,14 @@ def save_cached_response(
     cache_path = get_cache_path(sensor_id=sensor_id, cache_dir=cache_dir)
 
     cache_path.write_text(
-        json.dumps(response_data, indent=2),
-        encoding="utf-8"
+        json.dumps(response_data, indent=2), encoding="utf-8"
     )
 
 
 # ---------------------------------------------------------------------------
 # Coverage extraction
 # ---------------------------------------------------------------------------
+
 
 def get_result_year(result: dict) -> int | None:
     """Extract the local calendar year from an annual API result.
@@ -417,10 +412,7 @@ def get_result_year(result: dict) -> int | None:
     period = result.get("period") or {}
     datetime_from = period.get("datetimeFrom") or {}
 
-    timestamp = (
-        datetime_from.get("local")
-        or datetime_from.get("utc")
-    )
+    timestamp = datetime_from.get("local") or datetime_from.get("utc")
 
     if not timestamp:
         return None
@@ -429,9 +421,9 @@ def get_result_year(result: dict) -> int | None:
 
 
 def build_coverage_row(
-    sensor: pd.Series,
-    year: int,
-    result: dict | None
+        sensor: pd.Series,
+        year: int,
+        result: dict | None
 ) -> dict:
     """Build one sensor-year coverage record.
 
@@ -512,9 +504,7 @@ def build_coverage_row(
 
 
 def flatten_sensor_coverage(
-    sensor: pd.Series,
-    response_data: dict,
-    target_years: tuple[int, ...]
+    sensor: pd.Series, response_data: dict, target_years: tuple[int, ...]
 ) -> list[dict]:
     """Convert a sensor API response into sensor-year rows.
 
@@ -546,9 +536,7 @@ def flatten_sensor_coverage(
     for year in target_years:
         rows.append(
             build_coverage_row(
-                sensor=sensor,
-                year=year,
-                result=results_by_year.get(year)
+                sensor=sensor, year=year, result=results_by_year.get(year)
             )
         )
 
@@ -559,12 +547,13 @@ def flatten_sensor_coverage(
 # Pipeline
 # ---------------------------------------------------------------------------
 
+
 def collect_coverage(
     sensor_inventory: pd.DataFrame,
     api_key: str,
     target_years: tuple[int, ...],
     date_from: str,
-    date_to: str
+    date_to: str,
 ) -> pd.DataFrame:
     """Collect yearly coverage for all sensors.
 
@@ -611,7 +600,7 @@ def collect_coverage(
                 api_key=api_key,
                 sensor_id=sensor_id,
                 date_from=date_from,
-                date_to=date_to
+                date_to=date_to,
             )
 
             save_cached_response(
@@ -662,8 +651,8 @@ def print_summary(coverage: pd.DataFrame) -> None:
 
     print(f"Rows with yearly data: {coverage['api_record_found'].sum():,}")
 
-    print("Rows without yearly data: "
-        f"{(~coverage['api_record_found']).sum():,}"
+    print(
+        f"Rows without yearly data: {(~coverage['api_record_found']).sum():,}"
     )
 
     print()
@@ -671,8 +660,7 @@ def print_summary(coverage: pd.DataFrame) -> None:
 
     yearly_counts = (
         coverage[coverage["api_record_found"]]
-        .groupby("year")["sensor_id"]
-        .nunique()
+        .groupby("year")["sensor_id"].nunique()
     )
 
     print(yearly_counts.to_string())
@@ -683,15 +671,7 @@ def print_summary(coverage: pd.DataFrame) -> None:
     coverage_summary = (
         coverage[coverage["api_record_found"]]
         .groupby("year")["percent_coverage"]
-        .describe(
-            percentiles=[
-                0.10,
-                0.25,
-                0.50,
-                0.75,
-                0.90
-            ]
-        )
+        .describe(percentiles=[0.10, 0.25, 0.50, 0.75, 0.90])
     )
 
     print(coverage_summary.to_string())
@@ -712,7 +692,7 @@ def main() -> None:
         api_key=api_key,
         target_years=TARGET_YEARS,
         date_from=START_DATE,
-        date_to=END_DATE
+        date_to=END_DATE,
     )
 
     COVERAGE_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)

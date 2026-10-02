@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 # ----------------------------------------------------------------------------
 # Configuration
 # ----------------------------------------------------------------------------
@@ -18,9 +17,9 @@ HIGH_COVERAGE_THRESHOLD = 90.0
 # Summary
 # ----------------------------------------------------------------------------
 
+
 def summarize_location_coverage(
-        coverage: pd.DataFrame,
-        high_coverage_threshold: float
+    coverage: pd.DataFrame, high_coverage_threshold: float
 ) -> pd.DataFrame:
     """Summarize monthly archive coverage for each monitoring location.
 
@@ -40,16 +39,14 @@ def summarize_location_coverage(
     """
     coverage = coverage.copy()
 
-    coverage["has_files"] = (coverage["archive_file_count"] > 0)
+    coverage["has_files"] = coverage["archive_file_count"] > 0
 
     coverage["has_high_coverage"] = (
-        coverage["archive_file_coverage_pct"]
-        >= high_coverage_threshold
+        coverage["archive_file_coverage_pct"] >= high_coverage_threshold
     )
 
     summary = (
-        coverage
-        .groupby(
+        coverage.groupby(
             [
                 "location_id",
                 "station_name",
@@ -60,9 +57,9 @@ def summarize_location_coverage(
                 "country_name",
                 "latitude",
                 "longitude",
-                "target_parameter"
+                "target_parameter",
             ],
-            dropna=False
+            dropna=False,
         )
         .agg(
             total_months=("month", "count"),
@@ -70,44 +67,31 @@ def summarize_location_coverage(
             months_with_high_coverage=("has_high_coverage", "sum"),
             mean_archive_coverage_pct=("archive_file_coverage_pct", "mean"),
             median_archive_coverage_pct=(
-                "archive_file_coverage_pct",
-                "median"
+                "archive_file_coverage_pct", "median"
             ),
-            minimum_archive_coverage_pct=(
-                "archive_file_coverage_pct",
-                "min"
-            ),
-            maximum_archive_coverage_pct=(
-                "archive_file_coverage_pct",
-                "max"
-            ),
+            minimum_archive_coverage_pct=("archive_file_coverage_pct", "min"),
+            maximum_archive_coverage_pct=("archive_file_coverage_pct", "max"),
         )
         .reset_index()
     )
 
     summary["month_continuity_pct"] = (
-        summary["months_with_files"]
-        / summary["total_months"]
-        * 100
+        summary["months_with_files"] / summary["total_months"] * 100
     )
 
-    return (
-        summary
-        .sort_values(
-            [
-                "months_with_files",
-                "median_archive_coverage_pct",
-                "mean_archive_coverage_pct",
-            ],
-            ascending=False
-        )
-        .reset_index(drop=True)
-    )
+    return summary.sort_values(
+        [
+            "months_with_files",
+            "median_archive_coverage_pct",
+            "mean_archive_coverage_pct",
+        ],
+        ascending=False,
+    ).reset_index(drop=True)
 
 
 def add_yearly_coverage(
-        summary: pd.DataFrame,
-        coverage: pd.DataFrame,
+    summary: pd.DataFrame,
+    coverage: pd.DataFrame,
 ) -> pd.DataFrame:
     """Add average yearly archive coverage to the location summary.
 
@@ -124,13 +108,7 @@ def add_yearly_coverage(
         Location summary with yearly mean coverage columns added.
     """
     yearly = (
-        coverage
-        .groupby(
-            [
-                "location_id",
-                "year"
-            ]
-        )["archive_file_coverage_pct"]
+        coverage.groupby(["location_id", "year"])["archive_file_coverage_pct"]
         .mean()
         .unstack("year")
     )
@@ -159,9 +137,7 @@ def print_summary(summary: pd.DataFrame) -> None:
     print("Location archive summary")
     print("------------------------")
 
-    print(
-        f"Locations: {len(summary):,}"
-    )
+    print(f"Locations: {len(summary):,}")
 
     print()
     print("Locations by number of months with archive files:")
@@ -180,8 +156,7 @@ def print_summary(summary: pd.DataFrame) -> None:
     print("Coverage distribution for locations with all months present:")
 
     complete_locations = summary[
-        summary["months_with_files"]
-        == summary["total_months"]
+        summary["months_with_files"] == summary["total_months"]
     ]
 
     print(
@@ -210,13 +185,7 @@ def print_summary(summary: pd.DataFrame) -> None:
         "minimum_archive_coverage_pct",
     ]
 
-    print(
-        summary[
-            columns
-        ]
-        .head(10)
-        .to_string(index=False)
-    )
+    print(summary[columns].head(10).to_string(index=False))
 
 
 def main() -> None:
@@ -224,8 +193,7 @@ def main() -> None:
     coverage = pd.read_csv(COVERAGE_INPUT_PATH)
 
     summary = summarize_location_coverage(
-        coverage=coverage,
-        high_coverage_threshold=HIGH_COVERAGE_THRESHOLD
+        coverage=coverage, high_coverage_threshold=HIGH_COVERAGE_THRESHOLD
     )
 
     summary = add_yearly_coverage(summary=summary, coverage=coverage)

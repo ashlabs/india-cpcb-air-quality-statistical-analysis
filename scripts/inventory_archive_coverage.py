@@ -13,7 +13,7 @@ import requests
 # Configuration
 # ----------------------------------------------------------------------------
 
-ARCHIVE_BUCKET_URL = ("https://openaq-data-archive.s3.amazonaws.com/")
+ARCHIVE_BUCKET_URL = "https://openaq-data-archive.s3.amazonaws.com/"
 
 INVENTORY_INPUT_PATH = Path("data/processed/station_inventory.csv")
 
@@ -32,9 +32,9 @@ MAX_ATTEMPTS = 5
 # Analysis period
 # ----------------------------------------------------------------------------
 
+
 def get_target_months(
-        start_date: pd.Timestamp,
-        end_date: pd.Timestamp
+    start_date: pd.Timestamp, end_date: pd.Timestamp
 ) -> list[pd.Timestamp]:
     """Generate monthly timestamps for the analysis period.
 
@@ -50,14 +50,13 @@ def get_target_months(
     list[pandas.Timestamp]
         Month-start timestamps spanning the requested period.
     """
-    return list(
-        pd.date_range(start=start_date, end=end_date, freq="MS")
-    )
+    return list(pd.date_range(start=start_date, end=end_date, freq="MS"))
 
 
 # -----------------------------------------------------------------------------
 # Archive paths
 # -----------------------------------------------------------------------------
+
 
 def build_archive_prefix(location_id: int, year: int) -> str:
     """Build an OpenAQ archive prefix for one location and year.
@@ -74,9 +73,7 @@ def build_archive_prefix(location_id: int, year: int) -> str:
     str
         S3 object prefix for the requested location and year.
     """
-    return (
-        f"records/csv.gz/locationid={location_id}/year={year}/"
-    )
+    return f"records/csv.gz/locationid={location_id}/year={year}/"
 
 
 def get_cache_path(location_id: int, year: int) -> Path:
@@ -94,12 +91,13 @@ def get_cache_path(location_id: int, year: int) -> Path:
     pathlib.Path
         Local JSON cache path.
     """
-    return (CACHE_DIR / f"location_{location_id}_year_{year}.json")
+    return CACHE_DIR / f"location_{location_id}_year_{year}.json"
 
 
 # ----------------------------------------------------------------------------
 # Archive listing
 # ----------------------------------------------------------------------------
+
 
 def parse_s3_keys(xml_text: str) -> list[str]:
     """Extract object keys from an S3 ListObjectsV2 response.
@@ -167,12 +165,8 @@ def fetch_archive_keys(
         try:
             response = session.get(
                 ARCHIVE_BUCKET_URL,
-                params={
-                    "list-type": "2",
-                    "prefix": prefix,
-                    "max-keys": 1000
-                },
-                timeout=timeout
+                params={"list-type": "2", "prefix": prefix, "max-keys": 1000},
+                timeout=timeout,
             )
 
             response.raise_for_status()
@@ -183,7 +177,7 @@ def fetch_archive_keys(
             requests.ConnectionError,
             requests.Timeout,
             requests.HTTPError,
-            ET.ParseError
+            ET.ParseError,
         ) as exc:
             last_error = exc
 
@@ -209,6 +203,7 @@ def fetch_archive_keys(
 # ----------------------------------------------------------------------------
 # Cache
 # ----------------------------------------------------------------------------
+
 
 def load_cached_keys(location_id: int, year: int) -> list[str] | None:
     """Load cached archive keys for a location and year.
@@ -260,6 +255,7 @@ def save_cached_keys(location_id: int, year: int, keys: list[str]) -> None:
 # Archive key parsing
 # ----------------------------------------------------------------------------
 
+
 def get_key_month(key: str) -> int | None:
     """Extract the month number from an OpenAQ archive key.
 
@@ -278,10 +274,7 @@ def get_key_month(key: str) -> int | None:
     if marker not in key:
         return None
 
-    month_text = (
-        key.split(marker, maxsplit=1)[1]
-        .split("/", maxsplit=1)[0]
-    )
+    month_text = key.split(marker, maxsplit=1)[1].split("/", maxsplit=1)[0]
 
     try:
         return int(month_text)
@@ -302,10 +295,7 @@ def count_month_files(keys: list[str]) -> dict[int, int]:
     dict[int, int]
         Mapping from month number to number of archive files.
     """
-    counts = {
-        month: 0
-        for month in range(1, 13)
-    }
+    counts = {month: 0 for month in range(1, 13)}
 
     for key in keys:
         month = get_key_month(key)
@@ -320,11 +310,12 @@ def count_month_files(keys: list[str]) -> dict[int, int]:
 # Coverage inventory
 # ----------------------------------------------------------------------------
 
+
 def build_monthly_rows(
-        location: pd.Series,
-        year: int,
-        keys: list[str],
-        target_months: set[tuple[int, int]]
+    location: pd.Series,
+    year: int,
+    keys: list[str],
+    target_months: set[tuple[int, int]]
 ) -> list[dict]:
     """Build monthly archive-coverage rows for one location-year.
 
@@ -380,9 +371,9 @@ def build_monthly_rows(
 
     return rows
 
+
 def collect_archive_coverage(
-        inventory: pd.DataFrame,
-        target_months: list[pd.Timestamp]
+    inventory: pd.DataFrame, target_months: list[pd.Timestamp]
 ) -> pd.DataFrame:
     """Collect monthly archive availability for all target locations.
 
@@ -398,21 +389,11 @@ def collect_archive_coverage(
     pandas.DataFrame
         One archive-coverage row per location and target month.
     """
-    eligible_locations = inventory[
-        inventory["has_target_parameter"]
-    ].copy()
+    eligible_locations = inventory[inventory["has_target_parameter"]].copy()
 
-    year_month_pairs = {
-        (month.year, month.month)
-        for month in target_months
-    }
+    year_month_pairs = {(month.year, month.month) for month in target_months}
 
-    target_years = sorted(
-        {
-            month.year
-            for month in target_months
-        }
-    )
+    target_years = sorted({month.year for month in target_months})
 
     session = requests.Session()
 
@@ -421,8 +402,7 @@ def collect_archive_coverage(
     total_locations = len(eligible_locations)
 
     for position, (_, location) in enumerate(
-        eligible_locations.iterrows(),
-        start=1
+        eligible_locations.iterrows(), start=1
     ):
         location_id = int(location["location_id"])
 
@@ -433,10 +413,7 @@ def collect_archive_coverage(
         )
 
         for year in target_years:
-            keys = load_cached_keys(
-                location_id=location_id,
-                year=year
-            )
+            keys = load_cached_keys(location_id=location_id, year=year)
 
             source = "cache"
 
@@ -444,29 +421,19 @@ def collect_archive_coverage(
                 source = "s3"
 
                 keys = fetch_archive_keys(
-                    session=session,
-                    location_id=location_id,
-                    year=year
+                    session=session, location_id=location_id, year=year
                 )
 
-                save_cached_keys(
-                    location_id=location_id,
-                    year=year,
-                    keys=keys
-                )
+                save_cached_keys(location_id=location_id, year=year, keys=keys)
 
-            print(
-                f"    {year}: "
-                f"{len(keys):>3} files "
-                f"({source})"
-            )
+            print(f"    {year}: " f"{len(keys):>3} files " f"({source})")
 
             rows.extend(
                 build_monthly_rows(
                     location=location,
                     year=year,
                     keys=keys,
-                    target_months=year_month_pairs
+                    target_months=year_month_pairs,
                 )
             )
 
@@ -476,6 +443,7 @@ def collect_archive_coverage(
 # ----------------------------------------------------------------------------
 # Summary
 # ----------------------------------------------------------------------------
+
 
 def print_summary(coverage: pd.DataFrame) -> None:
     """Print archive availability summary statistics.
@@ -500,36 +468,26 @@ def print_summary(coverage: pd.DataFrame) -> None:
     print()
 
     monthly_summary = (
-        coverage
-        .groupby(["year", "month"])
+        coverage.groupby(["year", "month"])
         .agg(
             locations_with_files=(
                 "archive_file_count",
-                lambda values: (values > 0).sum()
+                lambda values: (values > 0).sum(),
             ),
-            median_file_coverage_pct=(
-                "archive_file_coverage_pct",
-                "median"
-            ),
-            mean_file_coverage_pct=(
-                "archive_file_coverage_pct",
-                "mean"
-            ),
+            median_file_coverage_pct=("archive_file_coverage_pct", "median"),
+            mean_file_coverage_pct=("archive_file_coverage_pct", "mean"),
         )
         .reset_index()
     )
 
     print("Monthly archive availability:")
-    print(
-        monthly_summary.to_string(
-            index=False
-        )
-    )
+    print(monthly_summary.to_string(index=False))
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     """Build and save the monthly archive-coverage inventory."""

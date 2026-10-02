@@ -12,12 +12,12 @@ import requests
 # Configuration
 # ----------------------------------------------------------------------------
 
-ARCHIVE_OBJECT_BASE_URL = ("https://openaq-data-archive.s3.amazonaws.com")
+ARCHIVE_OBJECT_BASE_URL = "https://openaq-data-archive.s3.amazonaws.com"
 CACHE_DIR = Path("data/raw/archive_inventory")
 
 SAMPLE_LOCATION_IDS = [
-    5586,   # Delhi
-    6973,   # Bengaluru
+    5586,  # Delhi
+    6973,  # Bengaluru
     11611,  # Mumbai
 ]
 
@@ -31,6 +31,7 @@ REQUEST_TIMEOUT_SECONDS = 30
 # ----------------------------------------------------------------------------
 # Archive inventory
 # ----------------------------------------------------------------------------
+
 
 def load_archive_keys(location_id: int, years: tuple[int, ...]) -> list[str]:
     """Load cached archive keys for a monitoring location.
@@ -55,21 +56,12 @@ def load_archive_keys(location_id: int, years: tuple[int, ...]) -> list[str]:
     keys = []
 
     for year in years:
-        cache_path = (
-            CACHE_DIR
-            / f"location_{location_id}_year_{year}.json"
-        )
+        cache_path = CACHE_DIR / f"location_{location_id}_year_{year}.json"
 
         if not cache_path.exists():
-            raise FileNotFoundError(
-                f"Missing archive cache: {cache_path}"
-            )
+            raise FileNotFoundError(f"Missing archive cache: {cache_path}")
 
-        year_keys = json.loads(
-            cache_path.read_text(
-                encoding="utf-8"
-            )
-        )
+        year_keys = json.loads(cache_path.read_text(encoding="utf-8"))
 
         keys.extend(year_keys)
 
@@ -98,22 +90,17 @@ def select_sample_keys(keys: list[str], sample_count: int) -> list[str]:
         return keys
 
     indexes = [
-        round(
-            index * (len(keys) - 1)
-            / (sample_count - 1)
-        )
+        round(index * (len(keys) - 1) / (sample_count - 1))
         for index in range(sample_count)
     ]
 
-    return [
-        keys[index]
-        for index in indexes
-    ]
+    return [keys[index] for index in indexes]
 
 
 # ----------------------------------------------------------------------------
 # Archive download
 # ----------------------------------------------------------------------------
+
 
 def download_archive_file(session: requests.Session, key: str) -> pd.DataFrame:
     """Download and read one compressed OpenAQ archive CSV.
@@ -149,6 +136,7 @@ def download_archive_file(session: requests.Session, key: str) -> pd.DataFrame:
 # ----------------------------------------------------------------------------
 # Inspection
 # ----------------------------------------------------------------------------
+
 
 def inspect_file(
         dataframe: pd.DataFrame,
@@ -189,21 +177,12 @@ def inspect_file(
 
     print()
     print("Parameter counts:")
-    print(
-        dataframe["parameter"]
-        .value_counts(dropna=False)
-        .to_string()
-    )
+    print(dataframe["parameter"].value_counts(dropna=False).to_string())
 
-    target = dataframe[
-        dataframe["parameter"] == target_parameter
-    ].copy()
+    target = dataframe[dataframe["parameter"] == target_parameter].copy()
 
     print()
-    print(
-        f"{target_parameter} rows: "
-        f"{len(target):,}"
-    )
+    print(f"{target_parameter} rows: " f"{len(target):,}")
 
     if target.empty:
         return
@@ -216,13 +195,10 @@ def inspect_file(
 
     if "sensors_id" in target.columns:
         print()
-        print(
-            f"{target_parameter} observations by sensor:"
-        )
+        print(f"{target_parameter} observations by sensor:")
 
         sensor_summary = (
-            target
-            .groupby("sensors_id")
+            target.groupby("sensors_id")
             .agg(
                 rows=("value", "size"),
                 first_timestamp=("datetime", "min"),
@@ -231,11 +207,7 @@ def inspect_file(
             .reset_index()
         )
 
-        print(
-            sensor_summary.to_string(
-                index=False
-            )
-        )
+        print(sensor_summary.to_string(index=False))
 
     if "datetime" not in target.columns:
         print()
@@ -249,35 +221,21 @@ def inspect_file(
     )
 
     print()
-    print(
-        f"First timestamp: "
-        f"{timestamps.min()}"
-    )
+    print(f"First timestamp: " f"{timestamps.min()}")
 
-    print(
-        f"Last timestamp: "
-        f"{timestamps.max()}"
-    )
+    print(f"Last timestamp: " f"{timestamps.max()}")
 
-    print(
-        f"Unique timestamps: "
-        f"{timestamps.nunique():,}"
-    )
+    print(f"Unique timestamps: " f"{timestamps.nunique():,}")
 
-    print(
-        "Duplicate timestamps: "
-        f"{timestamps.duplicated().sum():,}"
-    )
+    print("Duplicate timestamps: " f"{timestamps.duplicated().sum():,}")
 
     if "sensors_id" in target.columns:
-        sensor_timestamp_duplicates = (
-            target.duplicated(
-                subset=[
-                    "sensors_id",
-                    "datetime",
-                ]
-            ).sum()
-        )
+        sensor_timestamp_duplicates = target.duplicated(
+            subset=[
+                "sensors_id",
+                "datetime",
+            ]
+        ).sum()
 
         print(
             "Duplicate sensor/timestamp pairs: "
@@ -285,8 +243,7 @@ def inspect_file(
         )
 
     intervals = (
-        timestamps
-        .dropna()
+        timestamps.dropna()
         .sort_values()
         .drop_duplicates()
         .diff()
@@ -305,15 +262,9 @@ def inspect_file(
 
     if "value" in target.columns:
         print()
-        print(
-            f"{target_parameter} value summary:"
-        )
+        print(f"{target_parameter} value summary:")
 
-        print(
-            target["value"]
-            .describe()
-            .to_string()
-        )
+        print(target["value"].describe().to_string())
 
 
 def main() -> None:

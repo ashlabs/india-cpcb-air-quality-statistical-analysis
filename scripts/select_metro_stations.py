@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pandas as pd
 
-#-----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Configuration
-#-----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 SUMMARY_INPUT_PATH = Path("data/processed/location_archive_summary.csv")
 OUTPUT_PATH = Path("data/processed/selected_metro_stations.csv")
@@ -14,35 +14,21 @@ OUTPUT_PATH = Path("data/processed/selected_metro_stations.csv")
 TARGET_MONTH_COUNT = 18
 
 METRO_PATTERNS = {
-    "Delhi": [
-        "Delhi",
-        "New Delhi"
-    ],
-    "Mumbai": [
-        "Mumbai",
-        "Navi Mumbai"
-    ],
-    "Bengaluru": [
-        "Bengaluru"
-    ],
-    "Hyderabad": [
-        "Hyderabad"
-    ],
-    "Chennai": [
-        "Chennai"
-    ],
-    "Kolkata": [
-        "Kolkata"
-    ]
+    "Delhi": ["Delhi", "New Delhi"],
+    "Mumbai": ["Mumbai", "Navi Mumbai"],
+    "Bengaluru": ["Bengaluru"],
+    "Hyderabad": ["Hyderabad"],
+    "Chennai": ["Chennai"],
+    "Kolkata": ["Kolkata"],
 }
 
-#-----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Metro Classification
-#-----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+
 
 def classify_metro(
-        station_name: str,
-        metro_patterns: dict[str, list[str]]
+    station_name: str, metro_patterns: dict[str, list[str]]
 ) -> str | None:
     """Assign a metropolitan area using configured station-name patterns.
 
@@ -70,9 +56,11 @@ def classify_metro(
 
     return None
 
+
 # ----------------------------------------------------------------------------
 # Selection
 # ----------------------------------------------------------------------------
+
 
 def select_stations(
     summary: pd.DataFrame,
@@ -98,8 +86,7 @@ def select_stations(
     selected = summary.copy()
 
     selected["metro"] = selected["station_name"].apply(
-        classify_metro,
-        metro_patterns=metro_patterns
+        classify_metro, metro_patterns=metro_patterns
     )
 
     selected = selected[
@@ -120,7 +107,7 @@ def select_stations(
         "median_archive_coverage_pct",
         "minimum_archive_coverage_pct",
         "2025_mean_coverage_pct",
-        "2026_mean_coverage_pct"
+        "2026_mean_coverage_pct",
     ]
 
     return (
@@ -139,8 +126,9 @@ def select_stations(
 # Validation
 # ----------------------------------------------------------------------------
 
+
 def validate_selection(
-        selected: pd.DataFrame, 
+        selected: pd.DataFrame,
         expected_metros: set[str]
 ) -> None:
     """Validate the selected station set.
@@ -163,7 +151,7 @@ def validate_selection(
     """
     actual_metros = set(selected["metro"].dropna().unique())
 
-    missing_metros = (expected_metros - actual_metros)
+    missing_metros = expected_metros - actual_metros
 
     if missing_metros:
         raise ValueError(
@@ -177,6 +165,7 @@ def validate_selection(
 # ----------------------------------------------------------------------------
 # Reporting
 # ----------------------------------------------------------------------------
+
 
 def print_summary(selected: pd.DataFrame) -> None:
     """Print a summary of selected stations by metropolitan area.
@@ -213,17 +202,10 @@ def print_summary(selected: pd.DataFrame) -> None:
     print("Coverage summary by metro:")
 
     coverage_summary = (
-        selected
-        .groupby("metro")
+        selected.groupby("metro")
         .agg(
-            station_count=(
-                "location_id",
-                "count"
-            ),
-            mean_archive_coverage_pct=(
-                "mean_archive_coverage_pct",
-                "mean"
-            ),
+            station_count=("location_id", "count"),
+            mean_archive_coverage_pct=("mean_archive_coverage_pct", "mean"),
             median_archive_coverage_pct=(
                 "median_archive_coverage_pct",
                 "median"
@@ -239,16 +221,15 @@ def print_summary(selected: pd.DataFrame) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     """Select and save monitoring stations for the target metros."""
-    summary = pd.read_csv(
-        SUMMARY_INPUT_PATH
-    )
+    summary = pd.read_csv(SUMMARY_INPUT_PATH)
 
     selected = select_stations(
         summary=summary,
         metro_patterns=METRO_PATTERNS,
-        required_months=TARGET_MONTH_COUNT
+        required_months=TARGET_MONTH_COUNT,
     )
 
     validate_selection(selected=selected, expected_metros=set(METRO_PATTERNS))
