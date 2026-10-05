@@ -128,8 +128,8 @@ def select_stations(
 
 
 def validate_selection(
-        selected: pd.DataFrame,
-        expected_metros: set[str]
+    selected: pd.DataFrame,
+    expected_metros: set[str]
 ) -> None:
     """Validate the selected station set.
 
@@ -209,7 +209,7 @@ def print_summary(selected: pd.DataFrame) -> None:
             median_archive_coverage_pct=(
                 "median_archive_coverage_pct",
                 "median"
-            )
+            ),
         )
         .reset_index()
     )

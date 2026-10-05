@@ -67,7 +67,8 @@ def summarize_location_coverage(
             months_with_high_coverage=("has_high_coverage", "sum"),
             mean_archive_coverage_pct=("archive_file_coverage_pct", "mean"),
             median_archive_coverage_pct=(
-                "archive_file_coverage_pct", "median"
+                "archive_file_coverage_pct",
+                "median"
             ),
             minimum_archive_coverage_pct=("archive_file_coverage_pct", "min"),
             maximum_archive_coverage_pct=("archive_file_coverage_pct", "max"),

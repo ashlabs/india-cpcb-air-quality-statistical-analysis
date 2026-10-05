@@ -102,17 +102,18 @@ def fetch_locations(
     while True:
         print(f"Fetching locations page {page}...")
 
+        params: dict[str, str | int] = {
+            "countries_id": country_id,
+            "providers_id": provider_id,
+            "limit": limit,
+            "page": page,
+            "order_by": "id",
+            "sort_order": "asc",
+        }
         response = requests.get(
             OPENAQ_LOCATIONS_URL,
             headers={"X-API-Key": api_key},
-            params={
-                "countries_id": country_id,
-                "providers_id": provider_id,
-                "limit": limit,
-                "page": page,
-                "order_by": "id",
-                "sort_order": "asc",
-            },
+            params=params,
             timeout=timeout,
         )
 
@@ -204,8 +205,8 @@ def get_sensor_ids(
 
 
 def flatten_locations(
-        locations: list[dict],
-        target_parameter: str
+    locations: list[dict],
+    target_parameter: str
 ) -> pd.DataFrame:
     """Convert OpenAQ location metadata into a tabular inventory.
 
@@ -278,9 +279,10 @@ def flatten_locations(
         inventory["datetime_last_utc"], utc=True, errors="coerce"
     )
 
-    return inventory.sort_values(
-        ["station_name", "location_id"]
-    ).reset_index(drop=True)
+    return inventory.sort_values([
+        "station_name",
+        "location_id"
+    ]).reset_index(drop=True)
 
 
 # ----------------------------------------------------------------------------
@@ -318,7 +320,8 @@ def save_outputs(
     inventory_output_path.parent.mkdir(parents=True, exist_ok=True)
 
     raw_output_path.write_text(
-        json.dumps(locations, indent=2), encoding="utf-8"
+        json.dumps(locations, indent=2),
+        encoding="utf-8"
     )
 
     inventory.to_csv(inventory_output_path, index=False)

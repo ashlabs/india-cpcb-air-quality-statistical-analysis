@@ -86,12 +86,17 @@ def parse_sensor_ids(value: object) -> list[int]:
     list[int]
         Parsed sensor IDs. Returns an empty list when no IDs are present.
     """
-    if pd.isna(value):
+    if value is None:
+        return []
+
+    text = str(value).strip()
+
+    if not text or text.lower() in {"nan", "<na>", "none"}:
         return []
 
     sensor_ids = []
 
-    for sensor_id in str(value).split(","):
+    for sensor_id in text.split(","):
         sensor_id = sensor_id.strip()
 
         if sensor_id:
@@ -147,9 +152,11 @@ def build_sensor_inventory(inventory: pd.DataFrame) -> pd.DataFrame:
     ]
 
     if not duplicates.empty:
-        location_counts = duplicates.groupby(
-            "sensor_id"
-            )["location_id"].nunique()
+        location_counts = (
+            duplicates
+            .groupby("sensor_id")["location_id"]
+            .nunique()
+        )
 
         conflicting_ids = location_counts[location_counts > 1]
 
@@ -255,15 +262,16 @@ def fetch_sensor_years(
 
     for attempt in range(1, max_attempts + 1):
         try:
+            params: dict[str, str | int] = {
+                "date_from": date_from,
+                "date_to": date_to,
+                "limit": 10,
+                "page": 1,
+            }
             response = session.get(
                 url,
                 headers={"X-API-Key": api_key},
-                params={
-                    "date_from": date_from,
-                    "date_to": date_to,
-                    "limit": 10,
-                    "page": 1,
-                },
+                params=params,
                 timeout=timeout,
             )
 
@@ -337,8 +345,8 @@ def get_cache_path(sensor_id: int, cache_dir: Path = CACHE_DIR) -> Path:
 
 
 def load_cached_response(
-        sensor_id: int,
-        cache_dir: Path = CACHE_DIR
+    sensor_id: int,
+    cache_dir: Path = CACHE_DIR
 ) -> dict | None:
     """Load a previously cached sensor response if available.
 
@@ -387,7 +395,8 @@ def save_cached_response(
     cache_path = get_cache_path(sensor_id=sensor_id, cache_dir=cache_dir)
 
     cache_path.write_text(
-        json.dumps(response_data, indent=2), encoding="utf-8"
+        json.dumps(response_data, indent=2),
+        encoding="utf-8"
     )
 
 
@@ -421,9 +430,9 @@ def get_result_year(result: dict) -> int | None:
 
 
 def build_coverage_row(
-        sensor: pd.Series,
-        year: int,
-        result: dict | None
+    sensor: pd.Series,
+    year: int,
+    result: dict | None
 ) -> dict:
     """Build one sensor-year coverage record.
 
@@ -660,7 +669,8 @@ def print_summary(coverage: pd.DataFrame) -> None:
 
     yearly_counts = (
         coverage[coverage["api_record_found"]]
-        .groupby("year")["sensor_id"].nunique()
+        .groupby("year")["sensor_id"]
+        .nunique()
     )
 
     print(yearly_counts.to_string())

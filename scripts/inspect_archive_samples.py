@@ -139,9 +139,9 @@ def download_archive_file(session: requests.Session, key: str) -> pd.DataFrame:
 
 
 def inspect_file(
-        dataframe: pd.DataFrame,
-        key: str,
-        target_parameter: str
+    dataframe: pd.DataFrame,
+    key: str,
+    target_parameter: str
 ) -> None:
     """Print structural and target-parameter details for an archive file.
 

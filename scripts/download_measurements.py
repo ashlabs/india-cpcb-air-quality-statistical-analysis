@@ -62,7 +62,8 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(
         description=(
-            "Download target measurements from the OpenAQ historical archive.")
+            "Download target measurements from the OpenAQ historical archive."
+        )
     )
 
     parser.add_argument(
@@ -109,8 +110,9 @@ def load_archive_keys(location_id: int, years: tuple[int, ...]) -> list[str]:
     keys = []
 
     for year in years:
-        cache_path = (ARCHIVE_CACHE_DIR
-                      / f"location_{location_id}_year_{year}.json")
+        cache_path = (
+            ARCHIVE_CACHE_DIR / f"location_{location_id}_year_{year}.json"
+        )
 
         if not cache_path.exists():
             raise FileNotFoundError(f"Missing archive cache: {cache_path}")
@@ -141,7 +143,16 @@ def extract_archive_date(key: str) -> pd.Timestamp | None:
     if not match:
         return None
 
-    return pd.to_datetime(match.group(1), format="%Y%m%d", errors="coerce")
+    parsed_date = pd.to_datetime(
+        match.group(1),
+        format="%Y%m%d",
+        errors="coerce"
+    )
+
+    if not isinstance(parsed_date, pd.Timestamp):
+        return None
+
+    return parsed_date
 
 
 def filter_archive_keys(
@@ -190,7 +201,7 @@ def group_keys_by_month(keys: list[str]) -> dict[tuple[int, int], list[str]]:
     dict[tuple[int, int], list[str]]
         Mapping of ``(year, month)`` to sorted archive keys.
     """
-    grouped = {}
+    grouped: dict[tuple[int, int], list[str]] = {}
 
     for key in keys:
         archive_date = extract_archive_date(key)
@@ -486,7 +497,8 @@ def month_is_complete(location_id: int, year: int, month: int) -> bool:
     """
     output_dir = get_month_output_dir(
         location_id=location_id,
-        year=year, month=month
+        year=year,
+        month=month
     )
 
     return (output_dir / "measurements.parquet").exists() and (
@@ -565,8 +577,8 @@ def build_month_metadata(
         "measurement_rows": len(measurements),
         "unique_timestamps": (measurements["datetime_utc"].nunique()),
         "unique_sensors": (measurements["sensor_id"].nunique()),
-        "duplicate_timestamp_rows": int(
-            measurements["duplicate_timestamp"].sum()
+        "duplicate_timestamp_rows": (
+            int(measurements["duplicate_timestamp"].sum())
         ),
         "duplicate_sensor_timestamp_rows": int(
             measurements["duplicate_sensor_timestamp"].sum()
@@ -574,7 +586,9 @@ def build_month_metadata(
         "first_timestamp_utc": (
             measurements["datetime_utc"].min().isoformat()
         ),
-        "last_timestamp_utc": (measurements["datetime_utc"].max().isoformat()),
+        "last_timestamp_utc": (
+            measurements["datetime_utc"].max().isoformat()
+        ),
     }
 
 
@@ -759,8 +773,8 @@ def save_manifest(rows: list[dict]) -> None:
 
 
 def download_measurements(
-        locations: pd.DataFrame,
-        force: bool
+    locations: pd.DataFrame,
+    force: bool
 ) -> pd.DataFrame:
     """Download target measurements for selected locations.
 
@@ -865,18 +879,12 @@ def print_summary(manifest: pd.DataFrame) -> None:
     print("Measurement download complete")
     print("-----------------------------")
 
-    print(
-        f"Locations: "
-        f"{manifest['location_id'].nunique():,}"
-    )
+    print(f"Locations: {manifest['location_id'].nunique():,}")
+
+    print(f"Location-months: {len(manifest):,}")
 
     print(
-        f"Location-months: "
-        f"{len(manifest):,}"
-    )
-
-    print(
-        f"15-minute measurement rows: "
+        "15-minute measurement rows: "
         f"{manifest['measurement_rows'].sum():,}"
     )
 

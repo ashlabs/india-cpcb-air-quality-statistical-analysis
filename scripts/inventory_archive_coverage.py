@@ -163,9 +163,14 @@ def fetch_archive_keys(
 
     for attempt in range(1, max_attempts + 1):
         try:
+            params: dict[str, str | int] = {
+                "list-type": "2",
+                "prefix": prefix,
+                "max-keys": 1000,
+            }
             response = session.get(
                 ARCHIVE_BUCKET_URL,
-                params={"list-type": "2", "prefix": prefix, "max-keys": 1000},
+                params=params,
                 timeout=timeout,
             )
 
@@ -402,7 +407,8 @@ def collect_archive_coverage(
     total_locations = len(eligible_locations)
 
     for position, (_, location) in enumerate(
-        eligible_locations.iterrows(), start=1
+        eligible_locations.iterrows(),
+        start=1
     ):
         location_id = int(location["location_id"])
 
