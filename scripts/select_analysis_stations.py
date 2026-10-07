@@ -50,9 +50,7 @@ def add_eligibility_flags(
     """
     result = stations.copy()
 
-    has_full_month_coverage = (
-        result["months_with_measurements"] == required_months
-    )
+    has_full_month_coverage = result["months_with_measurements"] == required_months
 
     result["primary_eligible"] = has_full_month_coverage & (
         result["measurement_coverage_pct"] >= primary_threshold
@@ -96,8 +94,7 @@ def add_exclusion_reason(
         incomplete_months & low_coverage,
         "primary_exclusion_reason",
     ] = (
-        "Incomplete temporal coverage and "
-        "measurement completeness below threshold"
+        "Incomplete temporal coverage and " "measurement completeness below threshold"
     )
 
     result.loc[

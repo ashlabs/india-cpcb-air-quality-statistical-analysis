@@ -117,9 +117,7 @@ def parse_s3_keys(xml_text: str) -> list[str]:
     namespace = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
 
     return [
-        element.text
-        for element in root.findall(".//s3:Key", namespace)
-        if element.text
+        element.text for element in root.findall(".//s3:Key", namespace) if element.text
     ]
 
 
@@ -317,10 +315,7 @@ def count_month_files(keys: list[str]) -> dict[int, int]:
 
 
 def build_monthly_rows(
-    location: pd.Series,
-    year: int,
-    keys: list[str],
-    target_months: set[tuple[int, int]]
+    location: pd.Series, year: int, keys: list[str], target_months: set[tuple[int, int]]
 ) -> list[dict]:
     """Build monthly archive-coverage rows for one location-year.
 
@@ -406,10 +401,7 @@ def collect_archive_coverage(
 
     total_locations = len(eligible_locations)
 
-    for position, (_, location) in enumerate(
-        eligible_locations.iterrows(),
-        start=1
-    ):
+    for position, (_, location) in enumerate(eligible_locations.iterrows(), start=1):
         location_id = int(location["location_id"])
 
         print(

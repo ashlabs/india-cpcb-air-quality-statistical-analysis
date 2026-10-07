@@ -1,0 +1,15 @@
+{
+  "raw_measurement_rows": 3477273,
+  "missing_value_rows": 0,
+  "missing_datetime_rows": 0,
+  "negative_value_rows": 2861,
+  "upper_extreme_rows": 4279,
+  "zero_value_rows_retained": 24711,
+  "removed_rows": 7140,
+  "removed_pct": 0.20533331722875944,
+  "valid_measurement_rows": 3470133,
+  "hourly_rows": 865921,
+  "incomplete_hours_removed": 97459,
+  "daily_station_rows": 34669,
+  "incomplete_station_days_removed": 9679
+}

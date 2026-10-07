@@ -48,9 +48,7 @@ def get_api_key(env_path: Path = ENV_PATH) -> str:
     api_key = os.getenv("OPENAQ_API_KEY")
 
     if not api_key:
-        raise RuntimeError(
-            "OPENAQ_API_KEY was not loaded from the environment."
-        )
+        raise RuntimeError("OPENAQ_API_KEY was not loaded from the environment.")
 
     return api_key
 
@@ -136,8 +134,7 @@ def fetch_locations(
 
     if not locations:
         raise ValueError(
-            "OpenAQ returned no locations for the requested "
-            "country and provider."
+            "OpenAQ returned no locations for the requested " "country and provider."
         )
 
     return locations
@@ -204,10 +201,7 @@ def get_sensor_ids(
 # ----------------------------------------------------------------------------
 
 
-def flatten_locations(
-    locations: list[dict],
-    target_parameter: str
-) -> pd.DataFrame:
+def flatten_locations(locations: list[dict], target_parameter: str) -> pd.DataFrame:
     """Convert OpenAQ location metadata into a tabular inventory.
 
     Parameters
@@ -279,10 +273,7 @@ def flatten_locations(
         inventory["datetime_last_utc"], utc=True, errors="coerce"
     )
 
-    return inventory.sort_values([
-        "station_name",
-        "location_id"
-    ]).reset_index(drop=True)
+    return inventory.sort_values(["station_name", "location_id"]).reset_index(drop=True)
 
 
 # ----------------------------------------------------------------------------
@@ -319,10 +310,7 @@ def save_outputs(
 
     inventory_output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    raw_output_path.write_text(
-        json.dumps(locations, indent=2),
-        encoding="utf-8"
-    )
+    raw_output_path.write_text(json.dumps(locations, indent=2), encoding="utf-8")
 
     inventory.to_csv(inventory_output_path, index=False)
 
@@ -351,10 +339,7 @@ def print_summary(inventory: pd.DataFrame, target_parameter: str) -> None:
     print()
     print(f"Locations: {len(inventory):,}")
 
-    print(
-        f"Locations with {target_parameter} sensors: "
-        f"{len(target_inventory):,}"
-    )
+    print(f"Locations with {target_parameter} sensors: " f"{len(target_inventory):,}")
 
     print(
         f"Locations with multiple {target_parameter} sensors: "

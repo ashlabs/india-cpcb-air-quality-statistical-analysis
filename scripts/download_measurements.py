@@ -61,9 +61,7 @@ def parse_args() -> argparse.Namespace:
         Parsed command-line arguments.
     """
     parser = argparse.ArgumentParser(
-        description=(
-            "Download target measurements from the OpenAQ historical archive."
-        )
+        description=("Download target measurements from the OpenAQ historical archive.")
     )
 
     parser.add_argument(
@@ -110,9 +108,7 @@ def load_archive_keys(location_id: int, years: tuple[int, ...]) -> list[str]:
     keys = []
 
     for year in years:
-        cache_path = (
-            ARCHIVE_CACHE_DIR / f"location_{location_id}_year_{year}.json"
-        )
+        cache_path = ARCHIVE_CACHE_DIR / f"location_{location_id}_year_{year}.json"
 
         if not cache_path.exists():
             raise FileNotFoundError(f"Missing archive cache: {cache_path}")
@@ -143,11 +139,7 @@ def extract_archive_date(key: str) -> pd.Timestamp | None:
     if not match:
         return None
 
-    parsed_date = pd.to_datetime(
-        match.group(1),
-        format="%Y%m%d",
-        errors="coerce"
-    )
+    parsed_date = pd.to_datetime(match.group(1), format="%Y%m%d", errors="coerce")
 
     if not isinstance(parsed_date, pd.Timestamp):
         return None
@@ -225,9 +217,7 @@ def group_keys_by_month(keys: list[str]) -> dict[tuple[int, int], list[str]]:
 
 
 def download_archive_file(
-    key: str,
-    timeout: int = REQUEST_TIMEOUT_SECONDS,
-    max_attempts: int = MAX_ATTEMPTS
+    key: str, timeout: int = REQUEST_TIMEOUT_SECONDS, max_attempts: int = MAX_ATTEMPTS
 ) -> pd.DataFrame:
     """Download and decompress one OpenAQ archive file.
 
@@ -280,9 +270,7 @@ def download_archive_file(
 
             time.sleep(delay)
 
-    raise RuntimeError(
-        f"Unable to download archive file: {key}"
-    ) from last_error
+    raise RuntimeError(f"Unable to download archive file: {key}") from last_error
 
 
 # ---------------------------------------------------------------------------
@@ -313,8 +301,7 @@ def validate_source_schema(dataframe: pd.DataFrame, key: str) -> None:
 
     if missing_columns:
         raise ValueError(
-            f"Archive file {key} is missing columns: "
-            f"{sorted(missing_columns)}"
+            f"Archive file {key} is missing columns: " f"{sorted(missing_columns)}"
         )
 
 
@@ -360,9 +347,7 @@ def extract_target_measurements(
             f"Unexpected location IDs in {key}: " f"{sorted(location_ids)}"
         )
 
-    parameter_rows = (
-        dataframe[dataframe["parameter"] == target_parameter].copy()
-    )
+    parameter_rows = dataframe[dataframe["parameter"] == target_parameter].copy()
 
     if parameter_rows.empty:
         return parameter_rows
@@ -495,11 +480,7 @@ def month_is_complete(location_id: int, year: int, month: int) -> bool:
     bool
         True when both measurement and metadata output exist.
     """
-    output_dir = get_month_output_dir(
-        location_id=location_id,
-        year=year,
-        month=month
-    )
+    output_dir = get_month_output_dir(location_id=location_id, year=year, month=month)
 
     return (output_dir / "measurements.parquet").exists() and (
         output_dir / "metadata.json"
@@ -577,18 +558,12 @@ def build_month_metadata(
         "measurement_rows": len(measurements),
         "unique_timestamps": (measurements["datetime_utc"].nunique()),
         "unique_sensors": (measurements["sensor_id"].nunique()),
-        "duplicate_timestamp_rows": (
-            int(measurements["duplicate_timestamp"].sum())
-        ),
+        "duplicate_timestamp_rows": (int(measurements["duplicate_timestamp"].sum())),
         "duplicate_sensor_timestamp_rows": int(
             measurements["duplicate_sensor_timestamp"].sum()
         ),
-        "first_timestamp_utc": (
-            measurements["datetime_utc"].min().isoformat()
-        ),
-        "last_timestamp_utc": (
-            measurements["datetime_utc"].max().isoformat()
-        ),
+        "first_timestamp_utc": (measurements["datetime_utc"].min().isoformat()),
+        "last_timestamp_utc": (measurements["datetime_utc"].max().isoformat()),
     }
 
 
@@ -620,21 +595,13 @@ def process_month(
     station_name = location["station_name"]
     metro = location["metro"]
 
-    output_dir = get_month_output_dir(
-        location_id=location_id,
-        year=year,
-        month=month
-    )
+    output_dir = get_month_output_dir(location_id=location_id, year=year, month=month)
 
     parquet_path = output_dir / "measurements.parquet"
 
     metadata_path = output_dir / "metadata.json"
 
-    if not force and month_is_complete(
-        location_id=location_id,
-        year=year,
-        month=month
-    ):
+    if not force and month_is_complete(location_id=location_id, year=year, month=month):
         return json.loads(metadata_path.read_text(encoding="utf-8"))
 
     frames = []
@@ -772,10 +739,7 @@ def save_manifest(rows: list[dict]) -> None:
 # ---------------------------------------------------------------------------
 
 
-def download_measurements(
-    locations: pd.DataFrame,
-    force: bool
-) -> pd.DataFrame:
+def download_measurements(locations: pd.DataFrame, force: bool) -> pd.DataFrame:
     """Download target measurements for selected locations.
 
     Parameters
@@ -825,21 +789,14 @@ def download_measurements(
 
             keys = monthly_keys.get((year, month), [])
 
-            print(
-                f"    {year}-{month:02d}: "
-                f"{len(keys):>2} archive files", end=""
-            )
+            print(f"    {year}-{month:02d}: " f"{len(keys):>2} archive files", end="")
 
             was_complete = not force and month_is_complete(
                 location_id=location_id, year=year, month=month
             )
 
             metadata = process_month(
-                location=location,
-                year=year,
-                month=month,
-                keys=keys,
-                force=force
+                location=location, year=year, month=month, keys=keys, force=force
             )
 
             status = "cached" if was_complete else "downloaded"
@@ -883,14 +840,10 @@ def print_summary(manifest: pd.DataFrame) -> None:
 
     print(f"Location-months: {len(manifest):,}")
 
-    print(
-        "15-minute measurement rows: "
-        f"{manifest['measurement_rows'].sum():,}"
-    )
+    print("15-minute measurement rows: " f"{manifest['measurement_rows'].sum():,}")
 
     print(
-        "Duplicate timestamp rows: "
-        f"{manifest['duplicate_timestamp_rows'].sum():,}"
+        "Duplicate timestamp rows: " f"{manifest['duplicate_timestamp_rows'].sum():,}"
     )
 
     print(
@@ -935,9 +888,7 @@ def main() -> None:
     locations = pd.read_csv(SELECTED_LOCATIONS_PATH)
 
     if args.location_id is not None:
-        locations = (
-            locations[locations["location_id"] == args.location_id].copy()
-        )
+        locations = locations[locations["location_id"] == args.location_id].copy()
 
         if locations.empty:
             raise ValueError(

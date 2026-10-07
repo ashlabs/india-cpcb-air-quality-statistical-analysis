@@ -106,7 +106,10 @@ def summarize_locations(coverage: pd.DataFrame) -> pd.DataFrame:
             "measurement_coverage_pct",
             "max"
         ),
-        duplicate_timestamp_rows=("duplicate_timestamp_rows", "sum"),
+        duplicate_timestamp_rows=(
+            "duplicate_timestamp_rows",
+            "sum"
+        ),
         duplicate_sensor_timestamp_rows=(
             "duplicate_sensor_timestamp_rows",
             "sum"
@@ -156,9 +159,7 @@ def validate_summary(summary: pd.DataFrame, expected_month_count: int) -> None:
         If a location has an unexpected number of monthly records
         or duplicate timestamp records exist.
     """
-    unexpected_months = (
-        summary[summary["total_months"] != expected_month_count]
-    )
+    unexpected_months = summary[summary["total_months"] != expected_month_count]
 
     if not unexpected_months.empty:
         raise ValueError(
@@ -234,12 +235,7 @@ def print_summary(summary: pd.DataFrame) -> None:
 
     print(
         metro[
-            [
-                "metro",
-                "station_count",
-                "day_coverage_pct",
-                "measurement_coverage_pct"
-            ]
+            ["metro", "station_count", "day_coverage_pct", "measurement_coverage_pct"]
         ].to_string(index=False)
     )
 
@@ -271,16 +267,12 @@ def main() -> None:
     manifest = pd.read_csv(MANIFEST_INPUT_PATH)
 
     coverage = add_coverage_metrics(
-        manifest=manifest,
-        expected_measurements_per_day=(EXPECTED_MEASUREMENTS_PER_DAY)
+        manifest=manifest, expected_measurements_per_day=(EXPECTED_MEASUREMENTS_PER_DAY)
     )
 
     summary = summarize_locations(coverage=coverage)
 
-    validate_summary(
-        summary=summary,
-        expected_month_count=EXPECTED_MONTH_COUNT
-    )
+    validate_summary(summary=summary, expected_month_count=EXPECTED_MONTH_COUNT)
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 

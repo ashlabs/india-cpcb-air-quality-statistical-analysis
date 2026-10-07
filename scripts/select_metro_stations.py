@@ -63,9 +63,7 @@ def classify_metro(
 
 
 def select_stations(
-    summary: pd.DataFrame,
-    metro_patterns: dict[str, list[str]],
-    required_months: int
+    summary: pd.DataFrame, metro_patterns: dict[str, list[str]], required_months: int
 ) -> pd.DataFrame:
     """Select stations meeting metro and continuity requirements.
 
@@ -90,8 +88,7 @@ def select_stations(
     )
 
     selected = selected[
-        selected["metro"].notna()
-        & (selected["months_with_files"] == required_months)
+        selected["metro"].notna() & (selected["months_with_files"] == required_months)
     ].copy()
 
     columns = [
@@ -127,10 +124,7 @@ def select_stations(
 # ----------------------------------------------------------------------------
 
 
-def validate_selection(
-    selected: pd.DataFrame,
-    expected_metros: set[str]
-) -> None:
+def validate_selection(selected: pd.DataFrame, expected_metros: set[str]) -> None:
     """Validate the selected station set.
 
     Parameters
@@ -206,10 +200,7 @@ def print_summary(selected: pd.DataFrame) -> None:
         .agg(
             station_count=("location_id", "count"),
             mean_archive_coverage_pct=("mean_archive_coverage_pct", "mean"),
-            median_archive_coverage_pct=(
-                "median_archive_coverage_pct",
-                "median"
-            ),
+            median_archive_coverage_pct=("median_archive_coverage_pct", "median"),
         )
         .reset_index()
     )

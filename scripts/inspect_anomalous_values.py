@@ -10,13 +10,9 @@ import pandas as pd
 
 STATIONS_INPUT_PATH = Path("data/processed/analysis_stations.csv")
 MEASUREMENTS_DIR = Path("data/processed/measurements_15min")
-VALUE_FREQUENCY_OUTPUT_PATH = Path(
-    "data/processed/anomaly_value_frequencies.csv"
-)
+VALUE_FREQUENCY_OUTPUT_PATH = Path("data/processed/anomaly_value_frequencies.csv")
 SENSOR_SUMMARY_OUTPUT_PATH = Path("data/processed/anomaly_sensor_summary.csv")
-STATION_SUMMARY_OUTPUT_PATH = Path(
-    "data/processed/anomaly_station_summary.csv"
-)
+STATION_SUMMARY_OUTPUT_PATH = Path("data/processed/anomaly_station_summary.csv")
 SAMPLE_OUTPUT_PATH = Path("data/processed/anomaly_measurement_samples.csv")
 
 LOW_VALUE_THRESHOLD = 1.0
@@ -59,10 +55,7 @@ def get_primary_location_ids(stations: pd.DataFrame) -> set[int]:
     return set(eligible["location_id"].astype(int).tolist())
 
 
-def get_measurement_files(
-    measurement_dir: Path,
-    location_ids: set[int]
-) -> list[Path]:
+def get_measurement_files(measurement_dir: Path, location_ids: set[int]) -> list[Path]:
     """Find monthly measurement files for eligible locations.
 
     Parameters
@@ -177,10 +170,7 @@ def classify_measurements(measurements: pd.DataFrame) -> pd.DataFrame:
 
     zero = result["value"] == 0
 
-    low_positive = (
-        (result["value"] > 0)
-        & (result["value"] <= LOW_VALUE_THRESHOLD)
-    )
+    low_positive = (result["value"] > 0) & (result["value"] <= LOW_VALUE_THRESHOLD)
 
     high = (result["value"] >= HIGH_VALUE_THRESHOLD) & (
         result["value"] < EXTREME_VALUE_THRESHOLD
@@ -226,9 +216,7 @@ def build_value_frequencies(measurements: pd.DataFrame) -> pd.DataFrame:
 
     total_rows = len(measurements)
 
-    frequencies["measurement_pct"] = (
-        frequencies["measurement_count"] / total_rows * 100
-    )
+    frequencies["measurement_pct"] = frequencies["measurement_count"] / total_rows * 100
 
     return frequencies.sort_values(
         ["anomaly_type", "measurement_count"],
@@ -256,14 +244,7 @@ def add_indicator_columns(measurements: pd.DataFrame) -> pd.DataFrame:
     """
     result = measurements.copy()
 
-    categories = [
-        "missing",
-        "negative",
-        "zero",
-        "low_positive",
-        "high",
-        "extreme"
-    ]
+    categories = ["missing", "negative", "zero", "low_positive", "high", "extreme"]
 
     for category in categories:
         result[f"is_{category}"] = result["anomaly_type"] == category
@@ -307,9 +288,7 @@ def build_group_summary(
     }
 
     summary = (
-        flagged
-        .groupby(group_columns, dropna=False)
-        .agg(**aggregation).reset_index()
+        flagged.groupby(group_columns, dropna=False).agg(**aggregation).reset_index()
     )
 
     count_columns = [
@@ -325,9 +304,7 @@ def build_group_summary(
     for column in count_columns:
         percentage_column = column.replace("_count", "_pct")
 
-        summary[percentage_column] = (
-            summary[column] / summary["measurement_rows"] * 100
-        )
+        summary[percentage_column] = summary[column] / summary["measurement_rows"] * 100
 
     return summary
 
@@ -424,9 +401,7 @@ def print_exact_values(
     -------
     None
     """
-    subset = frequencies[
-        frequencies["anomaly_type"] == anomaly_type
-    ].head(row_count)
+    subset = frequencies[frequencies["anomaly_type"] == anomaly_type].head(row_count)
 
     print()
     print(f"Most frequent exact {anomaly_type} values:")
@@ -436,11 +411,7 @@ def print_exact_values(
         return
 
     print(
-        subset[[
-            "value",
-            "measurement_count",
-            "measurement_pct"
-        ]].to_string(index=False)
+        subset[["value", "measurement_count", "measurement_pct"]].to_string(index=False)
     )
 
 

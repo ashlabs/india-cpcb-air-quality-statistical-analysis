@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -30,7 +29,7 @@ READ_COLUMNS = [
     "metro",
     "datetime_source",
     "datetime_utc",
-    "value"
+    "value",
 ]
 
 
@@ -39,9 +38,7 @@ READ_COLUMNS = [
 # ---------------------------------------------------------------------------
 
 
-def get_primary_location_ids(
-    stations: pd.DataFrame
-) -> set[int]:
+def get_primary_location_ids(stations: pd.DataFrame) -> set[int]:
     """Extract location IDs belonging to the primary analysis cohort.
 
     Parameters
@@ -56,17 +53,10 @@ def get_primary_location_ids(
     """
     eligible = stations[stations["primary_eligible"]]
 
-    return set(
-        eligible["location_id"]
-        .astype(int)
-        .tolist()
-    )
+    return set(eligible["location_id"].astype(int).tolist())
 
 
-def get_measurement_files(
-    measurement_dir: Path,
-    location_ids: set[int]
-) -> list[Path]:
+def get_measurement_files(measurement_dir: Path, location_ids: set[int]) -> list[Path]:
     """Find monthly measurement files for eligible locations.
 
     Parameters
@@ -84,12 +74,11 @@ def get_measurement_files(
     files = []
 
     for location_id in sorted(location_ids):
-        location_dir = (measurement_dir / f"location_id={location_id}")
+        location_dir = measurement_dir / f"location_id={location_id}"
 
         if not location_dir.exists():
             raise FileNotFoundError(
-                f"Missing measurement directory: "
-                f"{location_dir}"
+                f"Missing measurement directory: " f"{location_dir}"
             )
 
         location_files = sorted(
@@ -98,8 +87,7 @@ def get_measurement_files(
 
         if not location_files:
             raise FileNotFoundError(
-                "No measurement files found for "
-                f"location {location_id}."
+                "No measurement files found for " f"location {location_id}."
             )
 
         files.extend(location_files)
@@ -107,9 +95,7 @@ def get_measurement_files(
     return files
 
 
-def load_measurements(
-    files: list[Path]
-) -> pd.DataFrame:
+def load_measurements(files: list[Path]) -> pd.DataFrame:
     """Load the required columns from monthly measurement files.
 
     Parameters
@@ -129,10 +115,7 @@ def load_measurements(
 
     for position, path in enumerate(files, start=1):
         if position == 1 or position % 100 == 0:
-            print(
-                f"Reading file "
-                f"{position:,}/{total_files:,}..."
-            )
+            print(f"Reading file " f"{position:,}/{total_files:,}...")
 
         frame = pd.read_parquet(path, columns=READ_COLUMNS)
 
@@ -150,8 +133,7 @@ def load_measurements(
 
 
 def build_value_profile(
-    measurements: pd.DataFrame,
-    group_columns: list[str]
+    measurements: pd.DataFrame, group_columns: list[str]
 ) -> pd.DataFrame:
     """Create measurement-quality statistics for grouped observations.
 
@@ -185,24 +167,13 @@ def build_value_profile(
         row.update(
             {
                 "measurement_rows": len(group),
-                "missing_value_count": int(
-                    values.isna().sum()
-                ),
-                "negative_value_count": int(
-                    (valid_values < 0).sum()
-                ),
-                "zero_value_count": int(
-                    (valid_values == 0).sum()
-                ),
+                "missing_value_count": int(values.isna().sum()),
+                "negative_value_count": int((valid_values < 0).sum()),
+                "zero_value_count": int((valid_values == 0).sum()),
                 "low_positive_value_count": int(
-                    (
-                        (valid_values > 0)
-                        & (valid_values <= LOW_VALUE_THRESHOLD)
-                    ).sum()
+                    ((valid_values > 0) & (valid_values <= LOW_VALUE_THRESHOLD)).sum()
                 ),
-                "high_value_count": int(
-                    (valid_values >= HIGH_VALUE_THRESHOLD).sum()
-                ),
+                "high_value_count": int((valid_values >= HIGH_VALUE_THRESHOLD).sum()),
                 "very_high_value_count": int(
                     (valid_values >= VERY_HIGH_VALUE_THRESHOLD).sum()
                 ),
@@ -217,7 +188,7 @@ def build_value_profile(
                 "p99": valid_values.quantile(0.99),
                 "maximum": valid_values.max(),
                 "standard_deviation": (valid_values.std()),
-                "unique_sensors": (group["sensor_id"].nunique())
+                "unique_sensors": (group["sensor_id"].nunique()),
             }
         )
 
@@ -226,9 +197,7 @@ def build_value_profile(
     return pd.DataFrame(rows)
 
 
-def add_rate_columns(
-    profile: pd.DataFrame
-) -> pd.DataFrame:
+def add_rate_columns(profile: pd.DataFrame) -> pd.DataFrame:
     """Add percentage columns for measurement-quality indicators.
 
     Parameters
@@ -251,7 +220,7 @@ def add_rate_columns(
         "zero_value_count",
         "low_positive_value_count",
         "high_value_count",
-        "very_high_value_count"
+        "very_high_value_count",
     ]
 
     for column in count_columns:
@@ -268,8 +237,7 @@ def add_rate_columns(
 
 
 def build_extreme_measurements(
-    measurements: pd.DataFrame,
-    record_count: int
+    measurements: pd.DataFrame, record_count: int
 ) -> pd.DataFrame:
     """Create a small dataset containing the lowest and highest values.
 
@@ -303,9 +271,7 @@ def build_extreme_measurements(
 # ---------------------------------------------------------------------------
 
 
-def build_overall_summary(
-    measurements: pd.DataFrame
-) -> dict[str, int | float | None]:
+def build_overall_summary(measurements: pd.DataFrame) -> dict[str, int | float | None]:
     """Build overall PM2.5 value-quality summary statistics.
 
     Parameters
@@ -330,47 +296,16 @@ def build_overall_summary(
         "negative_value_count": int((valid_values < 0).sum()),
         "zero_value_count": int((valid_values == 0).sum()),
         "low_positive_value_count": int(
-            (
-                (valid_values > 0)
-                & (valid_values <= LOW_VALUE_THRESHOLD)
-            ).sum()
+            ((valid_values > 0) & (valid_values <= LOW_VALUE_THRESHOLD)).sum()
         ),
-        "high_value_count": int(
-            (valid_values >= HIGH_VALUE_THRESHOLD).sum()
-        ),
-        "very_high_value_count": int(
-            (valid_values >= VERY_HIGH_VALUE_THRESHOLD).sum()
-        ),
-        "minimum": (
-            float(valid_values.min())
-            if not valid_values.empty
-            else None
-        ),
-        "p01": (
-            float(valid_values.quantile(0.01))
-            if not valid_values.empty
-            else None
-        ),
-        "median": (
-            float(valid_values.median())
-            if not valid_values.empty
-            else None
-        ),
-        "mean": (
-            float(valid_values.mean())
-            if not valid_values.empty
-            else None
-        ),
-        "p99": (
-            float(valid_values.quantile(0.99))
-            if not valid_values.empty
-            else None
-        ),
-        "maximum": (
-            float(valid_values.max())
-            if not valid_values.empty
-            else None
-        )
+        "high_value_count": int((valid_values >= HIGH_VALUE_THRESHOLD).sum()),
+        "very_high_value_count": int((valid_values >= VERY_HIGH_VALUE_THRESHOLD).sum()),
+        "minimum": (float(valid_values.min()) if not valid_values.empty else None),
+        "p01": (float(valid_values.quantile(0.01)) if not valid_values.empty else None),
+        "median": (float(valid_values.median()) if not valid_values.empty else None),
+        "mean": (float(valid_values.mean()) if not valid_values.empty else None),
+        "p99": (float(valid_values.quantile(0.99)) if not valid_values.empty else None),
+        "maximum": (float(valid_values.max()) if not valid_values.empty else None),
     }
 
 
@@ -382,7 +317,7 @@ def build_overall_summary(
 def print_summary(
     overall: dict[str, int | float | None],
     station_profile: pd.DataFrame,
-    metro_profile: pd.DataFrame
+    metro_profile: pd.DataFrame,
 ) -> None:
     """Print the main PM2.5 value-quality findings.
 
@@ -425,9 +360,7 @@ def print_summary(
     )
 
     print(
-        f"Values >= "
-        f"{HIGH_VALUE_THRESHOLD:g}: "
-        f"{overall['high_value_count']:,}"
+        f"Values >= " f"{HIGH_VALUE_THRESHOLD:g}: " f"{overall['high_value_count']:,}"
     )
 
     print(
@@ -439,14 +372,7 @@ def print_summary(
     print()
     print("Overall distribution:")
 
-    for key in [
-        "minimum",
-        "p01",
-        "median",
-        "mean",
-        "p99",
-        "maximum"
-    ]:
+    for key in ["minimum", "p01", "median", "mean", "p99", "maximum"]:
         print(f"{key:>8}: {overall[key]}")
 
     print()
@@ -461,26 +387,17 @@ def print_summary(
         "mean",
         "p95",
         "p99",
-        "maximum"
+        "maximum",
     ]
 
-    print(
-        metro_profile[columns]
-        .sort_values("metro")
-        .to_string(index=False)
-    )
+    print(metro_profile[columns].sort_values("metro").to_string(index=False))
 
     print()
     print("Stations with the most zero values:")
 
-    zero_stations = (
-        station_profile
-        .sort_values(
-            ["zero_value_count", "zero_value_pct"],
-            ascending=False
-        )
-        .head(15)
-    )
+    zero_stations = station_profile.sort_values(
+        ["zero_value_count", "zero_value_pct"], ascending=False
+    ).head(15)
 
     print(
         zero_stations[
@@ -492,7 +409,7 @@ def print_summary(
                 "zero_value_count",
                 "zero_value_pct",
                 "minimum",
-                "median"
+                "median",
             ]
         ].to_string(index=False)
     )
@@ -500,11 +417,10 @@ def print_summary(
     print()
     print("Stations with highest observed values:")
 
-    high_stations = (
-        station_profile
-        .sort_values("maximum", ascending=False,)
-        .head(15)
-    )
+    high_stations = station_profile.sort_values(
+        "maximum",
+        ascending=False,
+    ).head(15)
 
     print(
         high_stations[
@@ -514,7 +430,7 @@ def print_summary(
                 "metro",
                 "measurement_rows",
                 "p99",
-                "maximum"
+                "maximum",
             ]
         ].to_string(index=False)
     )
@@ -534,8 +450,7 @@ def main() -> None:
     print(f"Primary cohort locations: {len(location_ids):,}")
 
     files = get_measurement_files(
-        measurement_dir=MEASUREMENTS_DIR,
-        location_ids=location_ids
+        measurement_dir=MEASUREMENTS_DIR, location_ids=location_ids
     )
 
     print(f"Monthly Parquet files: {len(files):,}")
@@ -546,23 +461,19 @@ def main() -> None:
 
     station_profile = build_value_profile(
         measurements=measurements,
-        group_columns=["location_id", "station_name", "metro"]
+        group_columns=["location_id", "station_name", "metro"],
     )
 
     station_profile = add_rate_columns(profile=station_profile)
 
     metro_profile = build_value_profile(
-        measurements=measurements,
-        group_columns=["metro"]
+        measurements=measurements, group_columns=["metro"]
     )
 
     metro_profile = add_rate_columns(profile=metro_profile)
 
-    extreme_measurements = (
-        build_extreme_measurements(
-            measurements=measurements,
-            record_count=EXTREME_RECORD_COUNT
-        )
+    extreme_measurements = build_extreme_measurements(
+        measurements=measurements, record_count=EXTREME_RECORD_COUNT
     )
 
     STATION_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -575,15 +486,10 @@ def main() -> None:
 
     extreme_measurements.to_csv(EXTREME_VALUES_OUTPUT_PATH, index=False)
 
-    SUMMARY_OUTPUT_PATH.write_text(
-        json.dumps(overall, indent=2),
-        encoding="utf-8"
-    )
+    SUMMARY_OUTPUT_PATH.write_text(json.dumps(overall, indent=2), encoding="utf-8")
 
     print_summary(
-        overall=overall,
-        station_profile=station_profile,
-        metro_profile=metro_profile
+        overall=overall, station_profile=station_profile, metro_profile=metro_profile
     )
 
 
