@@ -220,7 +220,7 @@ The repository includes the compact processed datasets required to run the final
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/ashlabs/india-cpcb-air-quality-statistical-analysis.git
 cd india-cpcb-air-quality-statistical-analysis
 ```
 
