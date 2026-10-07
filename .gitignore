@@ -25,7 +25,9 @@ data/processed/*
 
 # Keep directory structure
 !data/raw/.gitkeep
-!data/processed/.gitkeep # Local environment secrets
+!data/processed/.gitkeep
+
+# Local environment secrets
 .env
 
 # Include compact datasets required by analysis.ipynb
